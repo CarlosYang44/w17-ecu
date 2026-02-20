@@ -1,0 +1,133 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Mercedes-AMG PETRONAS F1 Livery */
+  --color-body-bg: #1A1A1A;
+  /* Obsidian Black / Carbon Fiber */
+  --color-signature: #00A19B;
+  /* PETRONAS Green/Cyan */
+  --color-detailing: #E6E6E6;
+  /* Silver / Aluminum */
+
+  /* Tyres / Priorities */
+  --color-status-soft: #FF2800;
+  /* Red - High Priority */
+  --color-status-medium: #FFD700;
+  /* Yellow - Standard */
+  --color-status-hard: #FFFFFF;
+  /* White - Long-term */
+
+  /* UI Tokens */
+  --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+
+  --transition-fluid: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-fast: all 0.15s ease-out;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-body-bg);
+  color: var(--color-detailing);
+  font-family: var(--font-family-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+  /* Prevent scrolling for a dashboard feel */
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background-color: var(--color-signature);
+  color: var(--color-body-bg);
+}
+
+/* Base animations */
+@keyframes gaugeSweep {
+  0% {
+    transform: rotate(-90deg);
+    opacity: 0;
+  }
+
+  100% {
+    transform: rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* Phase 4 Data Stream Animation */
+@keyframes data-stream {
+  0% {
+    transform: translateX(-150%) skewX(-15deg);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  50% {
+    transform: translateX(250%) skewX(-15deg);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateX(250%) skewX(-15deg);
+    opacity: 0;
+  }
+}
+
+.data-stream-effect {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 161, 155, 0.08), transparent);
+  animation: data-stream 3s infinite cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Custom Scrollbar for Agenda */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 2px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-signature);
+}
