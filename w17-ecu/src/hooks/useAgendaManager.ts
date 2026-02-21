@@ -19,8 +19,8 @@ export function useAgendaManager() {
             } catch (e) {
                 console.error("Failed to parse agenda telemetry", e);
             }
-        } else {
-            // Default initial states if empty
+        } else if (localStorage.getItem('ecu_agenda_cleared') !== 'true') {
+            // Default initial states only if never explicitly cleared
             setObjectives([
                 { id: '1', title: 'Compile Final Findings to R&D', status: 'active', createdAt: Date.now() - 10000 },
                 { id: '2', title: 'Prepare Dataset Infrastructure', status: 'completed', createdAt: Date.now() - 50000 }
@@ -30,9 +30,7 @@ export function useAgendaManager() {
 
     // Save to local storage whenever objectives change
     useEffect(() => {
-        if (objectives.length > 0) {
-            localStorage.setItem('ecu_agenda_v1', JSON.stringify(objectives));
-        }
+        localStorage.setItem('ecu_agenda_v1', JSON.stringify(objectives));
     }, [objectives]);
 
     const toggleObjectiveStatus = (id: string) => {
@@ -65,5 +63,11 @@ export function useAgendaManager() {
         setObjectives(prev => prev.filter(obj => obj.id !== id));
     };
 
-    return { objectives, toggleObjectiveStatus, addObjective, deleteObjective };
+    const clearAgenda = () => {
+        setObjectives([]);
+        localStorage.removeItem('ecu_agenda_v1');
+        localStorage.setItem('ecu_agenda_cleared', 'true');
+    };
+
+    return { objectives, toggleObjectiveStatus, addObjective, deleteObjective, clearAgenda };
 }

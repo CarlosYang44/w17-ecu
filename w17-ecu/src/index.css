@@ -20,8 +20,8 @@
   /* White - Long-term */
 
   /* UI Tokens */
-  --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  --font-family-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+  --font-family-base: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  --font-family-mono: 'IBM Plex Mono', 'Fira Code', 'Courier New', monospace;
 
   --spacing-xs: 4px;
   --spacing-sm: 8px;
@@ -130,4 +130,116 @@ body {
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: var(--color-signature);
+}
+
+/* ===== Phase 8: Silver Arrow Aesthetics ===== */
+
+/* Ground Effect Underglow Breathe */
+@keyframes underglow-breathe {
+
+  0%,
+  100% {
+    box-shadow: 0 8px 32px -8px rgba(0, 161, 155, 0.0);
+  }
+
+  50% {
+    box-shadow: 0 8px 32px -8px rgba(0, 161, 155, 0.25);
+  }
+}
+
+.underglow-active {
+  animation: underglow-breathe 4s ease-in-out infinite;
+}
+
+/* Laser Sweep Effect */
+@keyframes laser-sweep {
+  0% {
+    transform: translateX(-200%);
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateX(400%);
+    opacity: 0;
+  }
+}
+
+.laser-sweep-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.laser-sweep-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 30%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 161, 155, 0.15), rgba(255, 255, 255, 0.05), transparent);
+  animation: laser-sweep 6s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* LED Shift Light Glow */
+@keyframes led-pulse {
+
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes led-flash {
+
+  0%,
+  50% {
+    opacity: 1;
+  }
+
+  51%,
+  100% {
+    opacity: 0.2;
+  }
+}
+
+.led-on {
+  animation: led-pulse 2s ease-in-out infinite;
+}
+
+.led-flash {
+  animation: led-flash 0.3s linear infinite;
+}
+
+/* Mercedes Star Watermark */
+.star-watermark {
+  position: absolute;
+  opacity: 0.04;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Decal Text Watermarks */
+.decal-watermark {
+  font-family: var(--font-family-mono);
+  font-size: 9px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(230, 230, 230, 0.06);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Ineos Red accent color */
+:root {
+  --color-ineos-red: #b81237;
 }

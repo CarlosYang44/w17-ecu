@@ -1,22 +1,54 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+
+interface RadioMessage {
+    id: string;
+    text: string;
+    priority: 'soft' | 'medium' | 'hard';
+    autoDismiss: boolean;
+}
 
 export function useRadioCommunication() {
-    const [activeMessage, setActiveMessage] = useState<{ id: string, text: string, priority: 'soft' | 'medium' | 'hard', autoDismiss: boolean } | null>(null);
+    const [activeMessage, setActiveMessage] = useState<RadioMessage | null>(null);
+    const [isVisible, setIsVisible] = useState(false);
+    const dismissedIdRef = useRef<string | null>(null);
+    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const sendMessage = (text: string, priority: 'soft' | 'medium' | 'hard' = 'medium', autoDismiss: boolean = true) => {
-        setActiveMessage({ id: Date.now().toString(), text, priority, autoDismiss });
+        const newId = Date.now().toString();
+        // Clear any pending auto-dismiss timer
+        if (timerRef.current) {
+            clearTimeout(timerRef.current);
+            timerRef.current = null;
+        }
+        setActiveMessage({ id: newId, text, priority, autoDismiss });
+        setIsVisible(true);
+        dismissedIdRef.current = null;
+
+        if (autoDismiss) {
+            timerRef.current = setTimeout(() => {
+                setIsVisible(false);
+                timerRef.current = null;
+            }, 5000);
+        }
     };
 
-    const clearMessage = () => setActiveMessage(null);
-
-    useEffect(() => {
-        if (activeMessage && activeMessage.autoDismiss) {
-            const timer = setTimeout(() => {
-                setActiveMessage(prev => prev?.id === activeMessage.id ? null : prev);
-            }, 5000);
-            return () => clearTimeout(timer);
+    const clearMessage = () => {
+        if (timerRef.current) {
+            clearTimeout(timerRef.current);
+            timerRef.current = null;
         }
-    }, [activeMessage]);
+        if (activeMessage) {
+            dismissedIdRef.current = activeMessage.id;
+        }
+        setIsVisible(false);
+    };
 
-    return { activeMessage, sendMessage, clearMessage };
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (timerRef.current) clearTimeout(timerRef.current);
+        };
+    }, []);
+
+    return { activeMessage, isVisible, sendMessage, clearMessage };
 }

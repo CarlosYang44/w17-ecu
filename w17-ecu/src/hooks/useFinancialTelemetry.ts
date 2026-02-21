@@ -54,5 +54,10 @@ export function useFinancialTelemetry() {
         return (totalGain / totalSpent).toFixed(2);
     };
 
-    return { transactions, addTransaction, calculateROI };
+    const clearTransactions = () => {
+        setTransactions([]);
+        localStorage.removeItem('w17_financial_telemetry');
+    };
+
+    return { transactions, addTransaction, calculateROI, clearTransactions };
 }

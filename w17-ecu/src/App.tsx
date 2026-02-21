@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { RaceEngineerRadio } from './components/RaceEngineerRadio';
 import { useRadioCommunication } from './hooks/useRadioCommunication';
-import { Activity, GitBranch, Terminal, RefreshCw, AlertTriangle, Wind, DollarSign, Target, PieChart as PieChartIcon, Star, GitFork, Cpu, Settings, FileText, ExternalLink } from 'lucide-react';
+import { Activity, GitBranch, Terminal, RefreshCw, AlertTriangle, Wind, DollarSign, Target, PieChart as PieChartIcon, Star, GitFork, Cpu, Settings, FileText, ExternalLink, Trash2 } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
 import { useGitHubTrending } from './hooks/useGitHubTrending';
 import { useHuggingFacePapers } from './hooks/useHuggingFacePapers';
@@ -16,14 +16,14 @@ function App() {
   const [hoveredRepoUrl, setHoveredRepoUrl] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'github' | 'hf' | 'finance' | 'analytics' | 'digest'>('github');
   const [isReady, setIsReady] = useState(false);
-  const { activeMessage, sendMessage, clearMessage } = useRadioCommunication();
+  const { activeMessage, isVisible: radioVisible, sendMessage, clearMessage } = useRadioCommunication();
 
   // Telemetry Sensors
   const { repos, loading: githubLoading, error: githubError } = useGitHubTrending();
   const { papers, loading: hfLoading, error: hfError } = useHuggingFacePapers();
   const weather = useWeatherRadar();
-  const { objectives, toggleObjectiveStatus, addObjective, deleteObjective } = useAgendaManager();
-  const { transactions, calculateROI, addTransaction } = useFinancialTelemetry();
+  const { objectives, toggleObjectiveStatus, addObjective, deleteObjective, clearAgenda } = useAgendaManager();
+  const { transactions, calculateROI, addTransaction, clearTransactions } = useFinancialTelemetry();
 
   // Agenda State
   const [newAgendaTitle, setNewAgendaTitle] = useState('');
@@ -34,7 +34,7 @@ function App() {
   const [showFocusLog, setShowFocusLog] = useState(false);
   const [focusLogCategory, setFocusLogCategory] = useState('Code');
   const [focusLogDesc, setFocusLogDesc] = useState('');
-  const { saveSession, getStatsByCategory, getTotalDuration, sessions } = useFocusTelemetry();
+  const { saveSession, getStatsByCategory, getTotalDuration, sessions, clearSessions } = useFocusTelemetry();
 
   const [newTxAmount, setNewTxAmount] = useState('');
   const [newTxDesc, setNewTxDesc] = useState('');
@@ -54,7 +54,8 @@ function App() {
     }, 1200);
 
     return () => clearTimeout(timer);
-  }, [sendMessage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     let focusInterval: ReturnType<typeof setInterval>;
@@ -70,7 +71,8 @@ function App() {
       }, 1000);
     }
     return () => clearInterval(focusInterval);
-  }, [focusState, sendMessage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusState]);
 
   const submitTransaction = (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,12 +105,34 @@ function App() {
       d.setDate(d.getDate() - (13 - i));
       return d.toISOString().split('T')[0];
     });
-    const dailyTotals: Record<string, number> = {};
+
+    const dailyTotals: Record<string, { duration: number, amount: number, gain: number }> = {};
+
+    last14Days.forEach(date => {
+      dailyTotals[date] = { duration: 0, amount: 0, gain: 0 };
+    });
+
     sessions.forEach(s => {
       const dateStr = new Date(s.timestamp).toISOString().split('T')[0];
-      dailyTotals[dateStr] = (dailyTotals[dateStr] || 0) + s.duration;
+      if (dailyTotals[dateStr]) {
+        dailyTotals[dateStr].duration += s.duration;
+      }
     });
-    return last14Days.map(date => ({ date, duration: dailyTotals[date] || 0 }));
+
+    transactions.forEach(t => {
+      const dateStr = new Date(t.timestamp).toISOString().split('T')[0];
+      if (dailyTotals[dateStr]) {
+        dailyTotals[dateStr].amount += t.amount;
+        dailyTotals[dateStr].gain += t.performanceGain;
+      }
+    });
+
+    return last14Days.map(date => ({
+      date,
+      duration: dailyTotals[date].duration,
+      amount: dailyTotals[date].amount,
+      gain: dailyTotals[date].gain
+    }));
   };
 
   const heatmapData = getDailyHeatmapData();
@@ -120,29 +144,58 @@ function App() {
     return `absolute inset-0 p-lg overflow-y-auto transition-fluid flex flex-col ${isActive ? 'translate-x-0 opacity-100 z-10' : isPast ? '-translate-x-full opacity-0 pointer-events-none' : 'translate-x-[120%] opacity-0 pointer-events-none'}`;
   };
 
+  // LED Shift Light Logic: 15 LEDs, mapped to focus time (0-25 min = 0-1500s)
+  const getLedCount = () => {
+    if (focusState === 'idle') return 0;
+    return Math.min(15, Math.floor((focusTime / 1500) * 15));
+  };
+  const activeLeds = getLedCount();
+  const isOverheat = focusTime > 1500;
+
+  const getLedColor = (index: number) => {
+    if (index < 5) return '#00A19B';  // Green (PETRONAS)
+    if (index < 10) return '#FF2800'; // Red
+    return '#6366F1';                 // Blue/Purple (Rev limiter)
+  };
+
   return (
     <div className="w-screen h-screen bg-body text-detailing overflow-hidden flex flex-col font-sans select-none">
       {/* Top Telemetry Bar */}
-      <header className="h-12 border-b border-[#333] flex items-center justify-between px-md shrink-0">
+      <header className="h-12 border-b border-white/10 flex items-center justify-between px-md shrink-0 relative bg-[#111111]/70 backdrop-blur-xl">
         <div className="flex items-center gap-sm text-signature font-mono text-sm tracking-widest">
-          <Terminal size={16} />
+          {/* Mercedes Three-Pointed Star - Header */}
+          <svg width="18" height="18" viewBox="0 0 100 100" className="opacity-60">
+            <circle cx="50" cy="50" r="45" fill="none" stroke="#00A19B" strokeWidth="2" />
+            <path d="M50 5 L50 50 L5 80" fill="none" stroke="#00A19B" strokeWidth="2" />
+            <path d="M50 5 L50 50 L95 80" fill="none" stroke="#00A19B" strokeWidth="2" />
+            <path d="M5 80 L50 50 L95 80" fill="none" stroke="#00A19B" strokeWidth="2" />
+          </svg>
           <span>W17 // SILVER ARROW BRAIN</span>
         </div>
 
+        {/* F1 Shift Light LED Array */}
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-[5px]">
+          {[...Array(15)].map((_, i) => (
+            <div
+              key={`led-${i}`}
+              className={`w-[10px] h-[10px] rounded-full transition-all duration-300 ${i < activeLeds
+                ? isOverheat ? 'led-flash' : 'led-on'
+                : ''
+                }`}
+              style={{
+                backgroundColor: i < activeLeds ? getLedColor(i) : '#222',
+                boxShadow: i < activeLeds ? `0 0 8px ${getLedColor(i)}, 0 0 16px ${getLedColor(i)}40` : 'none',
+                border: `1px solid ${i < activeLeds ? getLedColor(i) + '80' : '#333'}`
+              }}
+            />
+          ))}
+        </div>
+
         <div className="flex items-center gap-md">
-          {/* Active Aero / Status Indicators */}
-          <div className="flex gap-2">
-            <div className="h-1.5 w-12 bg-white/20 rounded-full overflow-hidden">
-              <div className="h-full bg-[#FF2800] w-1/3 shadow-[0_0_8px_#FF2800]" />
-            </div>
-            <div className="h-1.5 w-12 bg-white/20 rounded-full overflow-hidden">
-              <div className="h-full bg-signature w-2/3 shadow-[0_0_8px_var(--color-signature)]" />
-            </div>
-          </div>
-          <button onClick={() => setIsConfigOpen(true)} className="text-gray-500 hover:text-[#00A19B] transition-colors ml-4 focus:outline-none">
+          <button onClick={() => setIsConfigOpen(true)} className="text-gray-500 hover:text-[#00A19B] transition-colors focus:outline-none" title="Copilot Settings">
             <Settings size={16} />
           </button>
-          <div className="text-xs font-mono text-gray-500 ml-4">SYS: NOMINAL</div>
+          <div className="text-xs font-mono text-[#00A19B] ml-2">SYS: NOMINAL</div>
         </div>
       </header>
 
@@ -150,14 +203,14 @@ function App() {
       <main className="flex-1 flex overflow-hidden relative">
 
         {/* Left Panel: Core Vehicle Control (Strategy & Focus) */}
-        <div className="w-[300px] border-r border-[#333333] flex flex-col p-4 bg-[#111111] z-10 shrink-0 shadow-lg">
+        <div className="w-[300px] border-r border-white/10 flex flex-col p-4 bg-[#111111]/80 backdrop-blur-lg z-10 shrink-0 shadow-lg">
           {/* Navigation / Switch */}
           <div className="mb-6 flex flex-col gap-2 relative">
             <div className="flex items-center justify-between text-[10px] tracking-[0.2em] text-[#E6E6E6] opacity-50 mb-2 uppercase font-mono">
               <div className="flex items-center gap-2"><Activity className="w-3 h-3" /> DASHBOARD</div>
             </div>
 
-            <div className="flex bg-[#222222] rounded-[4px] p-1 relative border border-[#333]">
+            <div className="flex bg-[#1A1A1A]/60 backdrop-blur-md rounded-lg p-1 relative border border-white/5">
               <div
                 className="absolute top-1 bottom-1 w-[calc(20%-2px)] bg-[#00A19B] rounded-[2px] transition-transform duration-300 ease-in-out"
                 style={{
@@ -170,7 +223,6 @@ function App() {
                   key={tab}
                   onClick={() => {
                     setActiveTab(tab);
-                    sendMessage(`Switching telemetry matrix to ${tab.toUpperCase()}.`, 'soft');
                   }}
                   className="flex-1 py-1.5 text-[10px] text-center z-10 font-mono tracking-wider text-[#E6E6E6] relative transition-colors duration-300"
                   style={{
@@ -188,7 +240,12 @@ function App() {
           <div className="mb-8 flex flex-col max-h-[30vh]">
             <div className="flex items-center justify-between mb-3 border-b border-[#333] pb-2 shrink-0">
               <div className="text-[10px] tracking-widest text-[#00A19B] font-mono">AGENDA (NEXT LAP STRATEGY)</div>
-              <Target className="w-3 h-3 text-[#E6E6E6] opacity-50" />
+              <div className="flex items-center gap-3">
+                <button onClick={() => clearAgenda()} className="text-[#333] hover:text-[#FF2800] transition-colors" title="Purge Data">
+                  <Trash2 className="w-3 h-3" />
+                </button>
+                <Target className="w-3 h-3 text-[#E6E6E6] opacity-50" />
+              </div>
             </div>
 
             <div className="space-y-2 overflow-y-auto pr-2 mb-3 flex-1 custom-scrollbar">
@@ -231,7 +288,14 @@ function App() {
           <div className="flex-1" />
 
           {/* Focus Timer (RPM Gauge alternative) */}
-          <div className="mb-6 rounded-md border border-[#333] bg-[#151515] p-4 flex flex-col items-center justify-center relative overflow-hidden group">
+          <div className={`mb-6 rounded-md border border-[#333] bg-[#151515] p-4 flex flex-col items-center justify-center relative overflow-hidden group ${focusState === 'running' ? 'underglow-active' : ''}`}>
+            {/* Mercedes Star Watermark - Focus Timer Background */}
+            <svg className="star-watermark" width="180" height="180" viewBox="0 0 100 100" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+              <circle cx="50" cy="50" r="45" fill="none" stroke="#E6E6E6" strokeWidth="1" />
+              <path d="M50 5 L50 50 L5 80" fill="none" stroke="#E6E6E6" strokeWidth="1" />
+              <path d="M50 5 L50 50 L95 80" fill="none" stroke="#E6E6E6" strokeWidth="1" />
+              <path d="M5 80 L50 50 L95 80" fill="none" stroke="#E6E6E6" strokeWidth="1" />
+            </svg>
             {focusState === 'running' && (
               <div className="absolute inset-0 bg-[#00A19B] opacity-[0.05] animate-pulse pointer-events-none" />
             )}
@@ -314,10 +378,17 @@ function App() {
               </div>
             )}
           </div>
+
+          {/* Chassis Decal Watermarks */}
+          <div className="mt-4 flex flex-col gap-1">
+            <span className="decal-watermark">CHASSIS: W17</span>
+            <span className="decal-watermark">PU: M15 E PERFORMANCE</span>
+            <span className="decal-watermark">AERO CONFIG: HIGH DOWNFORCE</span>
+          </div>
         </div>
 
         {/* Dynamic Center Stage (F1 Paddle Switch effect) */}
-        <div className="flex-1 relative overflow-hidden bg-[#111]">
+        <div className="flex-1 relative overflow-hidden bg-[#111] laser-sweep-container">
           {/* GitHub Panel */}
           <div className={getTabClass('github')}>
             <div className="flex items-center gap-3 mb-6 text-[#00A19B] shrink-0">
@@ -435,9 +506,17 @@ function App() {
 
           {/* Financial Telemetry View */}
           <div className={getTabClass('finance')}>
-            <div className="flex items-center gap-3 mb-8 text-[#00A19B] shrink-0">
-              <DollarSign className="w-5 h-5" />
-              <h1 className="text-xl font-mono uppercase tracking-[0.2em] font-light">Capital ROI Telemetry</h1>
+            <div className="flex items-center justify-between mb-8 shrink-0">
+              <div className="flex items-center gap-3 text-[#00A19B]">
+                <DollarSign className="w-5 h-5" />
+                <h1 className="text-xl font-mono uppercase tracking-[0.2em] font-light">Capital ROI Telemetry</h1>
+              </div>
+              <button
+                onClick={() => clearTransactions()}
+                className="flex items-center gap-2 text-[10px] font-mono text-[#555] hover:text-[#FF2800] transition-colors border border-transparent hover:border-[#FF2800] px-3 py-1 bg-[#111]"
+              >
+                <Trash2 className="w-3 h-3" /> PURGE DATA
+              </button>
             </div>
 
             {/* Dashboard Stats */}
@@ -520,9 +599,17 @@ function App() {
 
           {/* Analytics Telemetry View */}
           <div className={getTabClass('analytics')}>
-            <div className="flex items-center gap-3 mb-8 text-[#00A19B] shrink-0">
-              <PieChartIcon className="w-5 h-5" />
-              <h1 className="text-xl font-mono uppercase tracking-[0.2em] font-light">Aero Focus Analytics</h1>
+            <div className="flex items-center justify-between mb-8 shrink-0">
+              <div className="flex items-center gap-3 text-[#00A19B]">
+                <PieChartIcon className="w-5 h-5" />
+                <h1 className="text-xl font-mono uppercase tracking-[0.2em] font-light">Aero Focus Analytics</h1>
+              </div>
+              <button
+                onClick={() => clearSessions()}
+                className="flex items-center gap-2 text-[10px] font-mono text-[#555] hover:text-[#FF2800] transition-colors border border-transparent hover:border-[#FF2800] px-3 py-1 bg-[#111]"
+              >
+                <Trash2 className="w-3 h-3" /> PURGE DATA
+              </button>
             </div>
 
             <div className="flex gap-8 mb-8 shrink-0">
@@ -537,20 +624,27 @@ function App() {
               </div>
 
               {/* 14-Day Heatmap */}
-              <div className="border border-[#333] bg-[#0A0A0A] p-4 flex-[3] flex flex-col hover:-translate-y-0.5 transition-all">
+              <div className="border border-[#333] bg-[#0A0A0A] p-4 flex-[3] flex flex-col hover:-translate-y-0.5 transition-all underglow-active">
                 <div className="text-[10px] font-mono tracking-widest text-[#888] mb-3 uppercase flex justify-between">
-                  <span>Telemetry History (14 Days)</span>
-                  <span className="text-[#00A19B]">CFD Intensity</span>
+                  <span>Unified Telemetry History (14 Days)</span>
+                  <span className="text-[#00A19B]">Focus & ROI Intensity</span>
                 </div>
                 <div className="flex-1 flex items-end justify-between gap-1">
                   {heatmapData.map((d, i) => {
-                    const intensity = Math.min(d.duration / 3000, 1); // Max intensity at 50 mins
-                    const bg = d.duration > 0 ? `rgba(0, 161, 155, ${Math.max(0.2, intensity)})` : '#111';
+                    const activityScore = d.duration + (d.gain * 300); // Base intensity on focus time + cognitive gain
+                    const intensity = Math.min(activityScore / 4000, 1);
+                    const bg = activityScore > 0 ? `rgba(0, 161, 155, ${Math.max(0.2, intensity)})` : '#111';
+
                     return (
                       <div key={d.date} className="w-full flex flex-col justify-end group/heat relative" style={{ height: '100%' }}>
-                        <div className="w-full rounded-[2px] transition-colors" style={{ height: `${Math.max(10, intensity * 100)}%`, backgroundColor: bg }} />
-                        <div className="absolute top-[-24px] left-1/2 -translate-x-1/2 bg-[#222] text-[#E6E6E6] text-[8px] font-mono px-1 py-0.5 opacity-0 group-hover/heat:opacity-100 whitespace-nowrap z-10 pointer-events-none">
-                          {d.date.slice(5)}: {formatTime(d.duration)}
+                        <div className="w-full rounded-[2px] transition-colors relative overflow-hidden" style={{ height: `${Math.max(10, intensity * 100)}%`, backgroundColor: bg }}>
+                          {d.amount > 0 && <div className="absolute bottom-0 left-0 right-0 bg-[#FF2800] opacity-50" style={{ height: `${Math.min(d.amount, 100)}%` }} />}
+                        </div>
+                        <div className="absolute top-[-55px] left-1/2 -translate-x-1/2 bg-[#222] text-[#E6E6E6] text-[9px] font-mono px-2 py-1.5 opacity-0 group-hover/heat:opacity-100 whitespace-nowrap z-10 pointer-events-none flex flex-col gap-0.5 border border-[#333] shadow-lg">
+                          <span className="text-[#888] mb-1">{d.date.slice(5)}</span>
+                          <span className="text-[#00A19B]">FOCUS: {formatTime(d.duration)}</span>
+                          {d.amount > 0 && <span className="text-[#FF2800]">SPENT: ${d.amount.toFixed(2)}</span>}
+                          {d.gain > 0 && <span className="text-[#FFD700]">GAIN: +{d.gain}</span>}
                         </div>
                       </div>
                     );
@@ -594,7 +688,7 @@ function App() {
                 )}
               </div>
 
-              <div className="flex-1 border border-[#333] bg-[#0A0A0A] p-6 flex flex-col overflow-hidden hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0,161,155,0.05)] transition-all group relative">
+              <div className="flex-1 border border-[#333] bg-[#0A0A0A] p-6 flex flex-col overflow-hidden hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0,161,155,0.05)] transition-all group relative underglow-active">
                 <div className="absolute inset-0 bg-[#00A19B] opacity-0 group-hover:opacity-[0.02] transition-opacity duration-1000" />
                 <div className="text-xs font-mono tracking-widest text-[#888] mb-6 uppercase border-b border-[#333] pb-2 z-10">Wind Tunnel Analytics (Radar)</div>
                 {sessions.length === 0 ? (
@@ -616,6 +710,18 @@ function App() {
                     </ResponsiveContainer>
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* Race Engineering Decal Strip */}
+            <div className="flex justify-between items-center mt-auto pt-4 border-t border-[#222]">
+              <div className="flex gap-6">
+                <span className="decal-watermark" style={{ fontSize: '8px', opacity: 0.08 }}>MERCEDES-AMG F1 W17</span>
+                <span className="decal-watermark" style={{ fontSize: '8px', opacity: 0.08 }}>EQ POWER+</span>
+              </div>
+              <div className="flex gap-6">
+                <span className="decal-watermark" style={{ fontSize: '8px', opacity: 0.08 }}>PETRONAS</span>
+                <span className="decal-watermark" style={{ fontSize: '8px', opacity: 0.08 }}>INEOS</span>
               </div>
             </div>
           </div>
@@ -718,10 +824,11 @@ function App() {
       </main>
 
       {/* Global Radio Component */}
+      {/* Engineer Radio */}
       <RaceEngineerRadio
-        isVisible={!!activeMessage}
         message={activeMessage?.text || ''}
-        priority={activeMessage?.priority || 'medium'}
+        priority={activeMessage?.priority}
+        isVisible={radioVisible}
         onDismiss={clearMessage}
       />
 

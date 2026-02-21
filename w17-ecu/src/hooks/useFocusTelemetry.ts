@@ -48,5 +48,10 @@ export function useFocusTelemetry() {
         return Object.entries(stats).map(([name, value]) => ({ name, value }));
     };
 
-    return { sessions, saveSession, getTotalDuration, getStatsByCategory };
+    const clearSessions = () => {
+        setSessions([]);
+        localStorage.removeItem('ecu_focus_telemetry');
+    };
+
+    return { sessions, saveSession, getTotalDuration, getStatsByCategory, clearSessions };
 }
