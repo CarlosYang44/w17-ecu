@@ -10,53 +10,12 @@ export interface HFPaper {
     upvotes: number;
 }
 
-export function useHuggingFacePapers() {
-    const [papers, setPapers] = useState<HFPaper[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        const fetchPapers = async () => {
-            setLoading(true);
-            try {
-                // Use today's date (local timezone) to fetch daily papers
-                const today = new Date();
-                const dateStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
-
-                // Try today first, if empty fall back to yesterday
-                let data = await fetchByDate(dateStr);
-                if (!data || data.length === 0) {
-                    const yesterday = new Date(today);
-                    yesterday.setDate(yesterday.getDate() - 1);
-                    const yesterdayStr = yesterday.toISOString().split('T')[0];
-                    data = await fetchByDate(yesterdayStr);
-                }
-
-                const formattedPapers = (data || []).map((item: any) => ({
-                    title: item.paper.title || 'Unknown Title',
-                    link: `https://huggingface.co/papers/${item.paper.id}`,
-                    pubDate: item.publishedAt || new Date().toISOString(),
-                    contentSnippet: item.paper.summary || '',
-                    guid: item.paper.id || Date.now().toString(),
-                    creator: item.paper.authors
-                        ? item.paper.authors.map((a: any) => a.name).join(', ')
-                        : 'HF Community',
-                    upvotes: item.paper.upvotes || 0,
-                }));
-
-                setPapers(formattedPapers);
-            } catch (err) {
-                setError(err instanceof Error ? err.message : 'Sensor failure reading HF flux');
-                console.error("HF Lab Error:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchPapers();
-    }, []);
-
-    return { papers, loading, error };
+/** Get local date string YYYY-MM-DD (avoids UTC shift from toISOString) */
+function getLocalDateStr(date: Date): string {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
 }
 
 async function fetchByDate(dateStr: string): Promise<any[]> {
@@ -68,4 +27,98 @@ async function fetchByDate(dateStr: string): Promise<any[]> {
         throw new Error(`Sensor failure with status: ${response.status}`);
     }
     return response.json();
+}
+
+function formatPapers(data: any[]): HFPaper[] {
+    return (data || []).map((item: any) => ({
+        title: item.paper.title || 'Unknown Title',
+        link: `https://huggingface.co/papers/${item.paper.id}`,
+        pubDate: item.publishedAt || new Date().toISOString(),
+        contentSnippet: item.paper.summary || '',
+        guid: item.paper.id || Date.now().toString(),
+        creator: item.paper.authors
+            ? item.paper.authors.map((a: any) => a.name).join(', ')
+            : 'HF Community',
+        upvotes: item.paper.upvotes || 0,
+    }));
+}
+
+export function useHuggingFacePapers() {
+    const [dailyPapers, setDailyPapers] = useState<HFPaper[]>([]);
+    const [weeklyPapers, setWeeklyPapers] = useState<HFPaper[]>([]);
+    const [dailyDate, setDailyDate] = useState<string>('');
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchPapers = async () => {
+            setLoading(true);
+            try {
+                const today = new Date();
+
+                // --- Daily: loop back up to 7 days to find the first date with papers ---
+                let dailyData: any[] = [];
+                let foundDateStr = '';
+                for (let i = 0; i < 7; i++) {
+                    const d = new Date(today);
+                    d.setDate(d.getDate() - i);
+                    const dateStr = getLocalDateStr(d);
+                    const data = await fetchByDate(dateStr);
+                    if (data && data.length > 0) {
+                        dailyData = data;
+                        foundDateStr = dateStr;
+                        break;
+                    }
+                }
+
+                setDailyPapers(formatPapers(dailyData));
+                setDailyDate(foundDateStr);
+
+                // --- Weekly: aggregate papers from the past 7 days ---
+                const seenIds = new Set<string>();
+                const allWeeklyRaw: any[] = [];
+
+                // We already fetched some dates above; start from day 0 again for completeness
+                // but reuse dailyData for the foundDateStr to avoid re-fetching
+                for (let i = 0; i < 7; i++) {
+                    const d = new Date(today);
+                    d.setDate(d.getDate() - i);
+                    const dateStr = getLocalDateStr(d);
+
+                    let data: any[];
+                    if (dateStr === foundDateStr) {
+                        data = dailyData;
+                    } else {
+                        try {
+                            data = await fetchByDate(dateStr);
+                        } catch {
+                            data = [];
+                        }
+                    }
+
+                    for (const item of (data || [])) {
+                        const id = item.paper?.id;
+                        if (id && !seenIds.has(id)) {
+                            seenIds.add(id);
+                            allWeeklyRaw.push(item);
+                        }
+                    }
+                }
+
+                // Sort by upvotes descending
+                allWeeklyRaw.sort((a, b) => (b.paper?.upvotes || 0) - (a.paper?.upvotes || 0));
+
+                setWeeklyPapers(formatPapers(allWeeklyRaw));
+            } catch (err) {
+                setError(err instanceof Error ? err.message : 'Sensor failure reading HF flux');
+                console.error("HF Lab Error:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchPapers();
+    }, []);
+
+    return { dailyPapers, weeklyPapers, dailyDate, loading, error };
 }

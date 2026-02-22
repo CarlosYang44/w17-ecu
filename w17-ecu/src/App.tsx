@@ -15,12 +15,13 @@ import { useAIDigest } from './hooks/useAIDigest';
 function App() {
   const [hoveredRepoUrl, setHoveredRepoUrl] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'github' | 'hf' | 'finance' | 'analytics' | 'digest'>('github');
+  const [hfSubTab, setHfSubTab] = useState<'daily' | 'weekly'>('daily');
   const [isReady, setIsReady] = useState(false);
   const { activeMessage, isVisible: radioVisible, sendMessage, clearMessage } = useRadioCommunication();
 
   // Telemetry Sensors
   const { repos, loading: githubLoading, error: githubError } = useGitHubTrending();
-  const { papers, loading: hfLoading, error: hfError } = useHuggingFacePapers();
+  const { dailyPapers, weeklyPapers, dailyDate, loading: hfLoading, error: hfError } = useHuggingFacePapers();
   const weather = useWeatherRadar();
   const { objectives, toggleObjectiveStatus, addObjective, deleteObjective, clearAgenda } = useAgendaManager();
   const { transactions, calculateROI, addTransaction, clearTransactions } = useFinancialTelemetry();
@@ -473,10 +474,34 @@ function App() {
 
           {/* Hugging Face Panel */}
           <div className={getTabClass('hf')}>
-            <div className="flex items-center gap-3 mb-8 text-[#00A19B] shrink-0">
+            <div className="flex items-center gap-3 mb-4 text-[#00A19B] shrink-0">
               <Terminal className="w-5 h-5" />
               <h1 className="text-xl font-mono uppercase tracking-[0.2em] font-light">Cognitive Abstracts</h1>
               {hfLoading && <RefreshCw className="animate-spin text-gray-500 ml-auto" size={16} />}
+            </div>
+
+            {/* Daily / Weekly Sub-Tab Toggle */}
+            <div className="flex items-center gap-4 mb-6 shrink-0">
+              <div className="flex bg-[#1A1A1A]/60 backdrop-blur-md rounded-[4px] p-0.5 border border-white/5">
+                {(['daily', 'weekly'] as const).map((sub) => (
+                  <button
+                    key={sub}
+                    onClick={() => setHfSubTab(sub)}
+                    className={`px-4 py-1.5 text-[10px] font-mono tracking-widest uppercase transition-all rounded-[2px] ${hfSubTab === sub
+                      ? 'bg-[#00A19B] text-[#111] font-semibold'
+                      : 'text-[#888] hover:text-[#E6E6E6]'
+                      }`}
+                  >
+                    {sub}
+                  </button>
+                ))}
+              </div>
+              {!hfLoading && hfSubTab === 'daily' && dailyDate && (
+                <span className="text-[10px] font-mono text-[#555] tracking-widest uppercase">SOURCE DATE: {dailyDate}</span>
+              )}
+              {!hfLoading && hfSubTab === 'weekly' && (
+                <span className="text-[10px] font-mono text-[#555] tracking-widest uppercase">PAST 7 DAYS • {weeklyPapers.length} PAPERS</span>
+              )}
             </div>
 
             {hfError && (
@@ -485,23 +510,29 @@ function App() {
               </div>
             )}
 
-            {!hfLoading && !hfError && papers.length > 0 && (
-              <div className="flex flex-col gap-3 pb-24 flex-1">
-                {papers.map((paper, i) => (
-                  <div key={i} className="border border-[#333333] hover:border-[#00A19B] hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0,161,155,0.05)] bg-[#111] p-5 cursor-pointer transition-all hover:bg-[#1A1A1A] group relative overflow-hidden" onClick={() => handleUpdateLog(paper.title, paper.link)}>
-                    <div className="data-stream-effect hidden group-hover:block mix-blend-screen" />
-                    <div className="flex justify-between items-start gap-4 mb-2 z-10 relative">
-                      <h2 className="text-base text-[#E6E6E6] font-mono leading-tight group-hover:text-[#00A19B] transition-colors">{paper.title}</h2>
-                      <span className="text-[10px] font-mono text-[#888] whitespace-nowrap bg-[#222] px-2 py-1 uppercase tracking-widest">{new Date(paper.pubDate).toLocaleDateString()}</span>
+            {(() => {
+              const papers = hfSubTab === 'daily' ? dailyPapers : weeklyPapers;
+              return !hfLoading && !hfError && papers.length > 0 ? (
+                <div className="flex flex-col gap-3 pb-24 flex-1">
+                  {papers.map((paper, i) => (
+                    <div key={paper.guid} className="border border-[#333333] hover:border-[#00A19B] hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0,161,155,0.05)] bg-[#111] p-5 cursor-pointer transition-all hover:bg-[#1A1A1A] group relative overflow-hidden" onClick={() => handleUpdateLog(paper.title, paper.link)}>
+                      <div className="data-stream-effect hidden group-hover:block mix-blend-screen" />
+                      <div className="flex justify-between items-start gap-4 mb-2 z-10 relative">
+                        <h2 className="text-base text-[#E6E6E6] font-mono leading-tight group-hover:text-[#00A19B] transition-colors">{paper.title}</h2>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-[10px] font-mono text-[#FFD700] whitespace-nowrap bg-[#222] px-2 py-1 flex items-center gap-1">▲ {paper.upvotes}</span>
+                          <span className="text-[10px] font-mono text-[#888] whitespace-nowrap bg-[#222] px-2 py-1 uppercase tracking-widest">{new Date(paper.pubDate).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                      <div className="text-xs font-mono text-[#555] mb-3 z-10 relative">AUTHORS: {paper.creator}</div>
+                      <p className="text-sm text-[#888888] line-clamp-3 leading-relaxed z-10 relative">
+                        {paper.contentSnippet}
+                      </p>
                     </div>
-                    <div className="text-xs font-mono text-[#555] mb-3 z-10 relative">AUTHORS: {paper.creator}</div>
-                    <p className="text-sm text-[#888888] line-clamp-3 leading-relaxed z-10 relative">
-                      {paper.contentSnippet}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              ) : null;
+            })()}
           </div>
 
           {/* Financial Telemetry View */}
@@ -757,7 +788,7 @@ function App() {
                     setIsConfigOpen(true);
                   } else {
                     sendMessage("Initializing AI Digest Protocol. Analyzing telemetry...", "hard");
-                    generateDigest(config, repos, papers, digestHours, digestCount);
+                    generateDigest(config, repos, dailyPapers, digestHours, digestCount);
                   }
                 }}
                 disabled={isGenerating || githubLoading || hfLoading}
