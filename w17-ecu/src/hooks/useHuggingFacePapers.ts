@@ -63,11 +63,16 @@ export function useHuggingFacePapers() {
                     const d = new Date(today);
                     d.setDate(d.getDate() - i);
                     const dateStr = getLocalDateStr(d);
-                    const data = await fetchByDate(dateStr);
-                    if (data && data.length > 0) {
-                        dailyData = data;
-                        foundDateStr = dateStr;
-                        break;
+                    try {
+                        const data = await fetchByDate(dateStr);
+                        if (data && data.length > 0) {
+                            dailyData = data;
+                            foundDateStr = dateStr;
+                            break;
+                        }
+                    } catch {
+                        // Date may be rejected by API (e.g. local TZ ahead of UTC)
+                        continue;
                     }
                 }
 
