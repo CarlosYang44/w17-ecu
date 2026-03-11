@@ -74,9 +74,9 @@ export function MaoQuotations() {
     if (geminiKey) {
       setIsFetching(true);
       try {
-        // Construct history constraint
+        // Construct hyper-aggressive history constraint
         const historyConstraint = quoteHistory.length > 0 
-          ? `\n\nCRITICAL CONSTRAINT: You MUST NOT generate any of the following quotes. They have been shown recently:\n${quoteHistory.map((q, i) => `${i+1}. "${q}"`).join('\n')}\nPick a completely different quote.`
+          ? `\n\n[CRITICAL SYSTEM OVERRIDE]\nYOU MUST NOT, UNDER ANY CIRCUMSTANCES, OUTPUT ANY OF THE FOLLOWING QUOTES:\n${quoteHistory.map((q, i) => `${i+1}. "${q}"`).join('\n')}\n\nIF YOU OUTPUT A QUOTE FROM THIS LIST, THE SYSTEM WILL CRASH. YOU MUST FIND A COMPLETELY DIFFERENT, NOVEL QUOTE FROM MAO ZEDONG'S WORKS THAT FITS THE STRESS LEVEL.`
           : '';
 
         const prompt = `You are a strategic morale advisor embedded within a high-tech F1 telemetry dashboard. 
@@ -99,7 +99,7 @@ Output MUST be strictly valid JSON without markdown wrapping, using exactly thes
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
             generationConfig: {
-              temperature: 0.9,
+              temperature: 1.2, // Pushed higher to force diverse generation
               responseMimeType: "application/json"
             }
           })
@@ -133,9 +133,24 @@ Output MUST be strictly valid JSON without markdown wrapping, using exactly thes
       setIsFetching(false);
     }
     
+    // Offline/Fallback constraint check
     if (!newQuote) {
       const quotes = QUOTATIONS[level];
-      newQuote = quotes[Math.floor(Math.random() * quotes.length)];
+      let availableQuotes = quotes.filter(q => !quoteHistory.includes(q.text));
+      
+      // If we exhausted all hardcoded quotes for this level, just reset the pool
+      if (availableQuotes.length === 0) {
+        availableQuotes = quotes;
+      }
+      
+      newQuote = availableQuotes[Math.floor(Math.random() * availableQuotes.length)];
+      
+      // Push the fallback selection to history as well!
+      setQuoteHistory(prev => {
+        const updated = [newQuote!.text, ...prev].slice(0, 30);
+        localStorage.setItem('mz_quote_history', JSON.stringify(updated));
+        return updated;
+      });
     }
     
     setActiveQuote(newQuote);
