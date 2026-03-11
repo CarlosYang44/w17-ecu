@@ -1,4 +1,7 @@
 import { useState, useEffect } from 'react';
+import { ConferenceTimeline } from './components/ConferenceTimeline';
+import { PhdRecruitment } from './components/PhdRecruitment';
+import { MaoQuotations } from './components/MaoQuotations';
 import { RaceEngineerRadio } from './components/RaceEngineerRadio';
 import { useRadioCommunication } from './hooks/useRadioCommunication';
 import { Activity, GitBranch, Terminal, RefreshCw, AlertTriangle, Wind, DollarSign, Target, PieChart as PieChartIcon, Star, GitFork, Cpu, Settings, FileText, ExternalLink, Trash2 } from 'lucide-react';
@@ -14,7 +17,7 @@ import { useAIDigest } from './hooks/useAIDigest';
 
 function App() {
   const [hoveredRepoUrl, setHoveredRepoUrl] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'github' | 'hf' | 'finance' | 'analytics' | 'digest'>('github');
+  const [activeTab, setActiveTab] = useState<'github' | 'hf' | 'finance' | 'analytics' | 'digest' | 'labs'>('github');
   const [hfSubTab, setHfSubTab] = useState<'daily' | 'weekly'>('daily');
   const [isReady, setIsReady] = useState(false);
   const { activeMessage, isVisible: radioVisible, sendMessage, clearMessage } = useRadioCommunication();
@@ -139,7 +142,7 @@ function App() {
   const heatmapData = getDailyHeatmapData();
 
   const getTabClass = (tab: string) => {
-    const tabs = ['github', 'hf', 'finance', 'analytics', 'digest'];
+    const tabs = ['github', 'hf', 'finance', 'analytics', 'digest', 'labs'];
     const isActive = activeTab === tab;
     const isPast = tabs.indexOf(tab) < tabs.indexOf(activeTab);
     return `absolute inset-0 p-lg overflow-y-auto transition-fluid flex flex-col ${isActive ? 'translate-x-0 opacity-100 z-10' : isPast ? '-translate-x-full opacity-0 pointer-events-none' : 'translate-x-[120%] opacity-0 pointer-events-none'}`;
@@ -213,25 +216,25 @@ function App() {
 
             <div className="flex bg-[#1A1A1A]/60 backdrop-blur-md rounded-lg p-1 relative border border-white/5">
               <div
-                className="absolute top-1 bottom-1 w-[calc(20%-2px)] bg-[#00A19B] rounded-[2px] transition-transform duration-300 ease-in-out"
+                className="absolute top-1 bottom-1 w-[calc(16.666%-2px)] bg-[#00A19B] rounded-[2px] transition-transform duration-300 ease-in-out"
                 style={{
-                  transform: `translateX(${['github', 'hf', 'finance', 'analytics', 'digest'].indexOf(activeTab) * 100}%)`
+                  transform: `translateX(${['github', 'hf', 'finance', 'analytics', 'digest', 'labs'].indexOf(activeTab) * 100}%)`
                 }}
               />
 
-              {(['github', 'hf', 'finance', 'analytics', 'digest'] as const).map((tab) => (
+              {(['github', 'hf', 'finance', 'analytics', 'digest', 'labs'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => {
                     setActiveTab(tab);
                   }}
-                  className="flex-1 py-1.5 text-[10px] text-center z-10 font-mono tracking-wider text-[#E6E6E6] relative transition-colors duration-300"
+                  className="flex-1 py-1 text-[10px] h-[30px] flex items-center justify-center z-10 font-mono tracking-wider text-[#E6E6E6] relative transition-colors duration-300"
                   style={{
                     color: activeTab === tab ? '#1A1A1A' : '#E6E6E6',
                     fontWeight: activeTab === tab ? 600 : 400
                   }}
                 >
-                  {tab === 'github' ? 'GitHub' : tab === 'hf' ? 'HF Lab' : tab === 'finance' ? 'ROI' : tab === 'analytics' ? 'Stats' : 'Digest'}
+                  {tab === 'github' ? 'GitHub' : tab === 'hf' ? 'HF Lab' : tab === 'finance' ? 'ROI' : tab === 'analytics' ? 'Stats' : tab === 'digest' ? 'Digest' : 'Labs'}
                 </button>
               ))}
             </div>
@@ -386,10 +389,18 @@ function App() {
             <span className="decal-watermark">PU: M15 E PERFORMANCE</span>
             <span className="decal-watermark">AERO CONFIG: HIGH DOWNFORCE</span>
           </div>
+
+          <MaoQuotations />
         </div>
 
         {/* Dynamic Center Stage (F1 Paddle Switch effect) */}
-        <div className="flex-1 relative overflow-hidden bg-[#111] laser-sweep-container">
+        <div className="flex-1 relative overflow-hidden bg-[#111] laser-sweep-container flex flex-col">
+          {/* Top Panel: Timeline */}
+          <div className="h-[25%] min-h-[160px] shrink-0 border-b border-[#333] relative z-20">
+            <ConferenceTimeline />
+          </div>
+
+          <div className="flex-1 relative overflow-hidden z-10">
           {/* GitHub Panel */}
           <div className={getTabClass('github')}>
             <div className="flex items-center gap-3 mb-6 text-[#00A19B] shrink-0">
@@ -850,6 +861,13 @@ function App() {
                 <p className="text-[10px] text-[#444]">Configure Copilot API to enable automated intelligence briefing.</p>
               </div>
             )}
+          </div>
+          
+          {/* PhD Recruitment View */}
+          <div className={getTabClass('labs')}>
+            <PhdRecruitment />
+          </div>
+
           </div>
         </div>
       </main>

@@ -15,13 +15,16 @@ export function useFinancialTelemetry() {
         const loadTransactions = () => {
             const stored = localStorage.getItem('w17_financial_telemetry');
             if (stored) {
-                setTransactions(JSON.parse(stored));
+                let parsed: Transaction[] = JSON.parse(stored);
+                const hasOldDefaults = parsed.some(t => t.id === '1' || t.id === '2');
+                if (hasOldDefaults) {
+                    parsed = parsed.filter(t => t.id !== '1' && t.id !== '2');
+                    localStorage.setItem('w17_financial_telemetry', JSON.stringify(parsed));
+                }
+                setTransactions(parsed);
             } else {
                 // Initial Mock Data
-                const initialFocus: Transaction[] = [
-                    { id: '1', amount: 15.00, description: 'OpenAI API Usage', performanceGain: 9, timestamp: new Date(Date.now() - 86400000).toISOString() },
-                    { id: '2', amount: 4.50, description: 'Coffee', performanceGain: 5, timestamp: new Date(Date.now() - 40000000).toISOString() }
-                ];
+                const initialFocus: Transaction[] = [];
                 localStorage.setItem('w17_financial_telemetry', JSON.stringify(initialFocus));
                 setTransactions(initialFocus);
             }
