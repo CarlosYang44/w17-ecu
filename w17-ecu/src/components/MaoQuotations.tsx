@@ -87,7 +87,7 @@ Level 3 (ENGINE FAIL): Extreme panic, breakdown, or near giving up. Provide a qu
 
 Generate ONE highly authentic, powerful quotation from Mao Zedong's works that perfectly matches this anxiety level. ${historyConstraint}
 
-Output MUST be strictly valid JSON without markdown wrapping, using exactly these two keys:
+Output MUST be STRICTLY valid JSON ONLY. DO NOT wrap the response in markdown code blocks like \`\`\`json. Output EXACTLY this format:
 {
   "text": "The quotation in Chinese",
   "source": "The book or speech it came from"
@@ -105,16 +105,24 @@ Output MUST be strictly valid JSON without markdown wrapping, using exactly thes
           })
         });
 
-        if (!response.ok) throw new Error("API Request Failed");
+        if (!response.ok) {
+          const errorData = await response.text();
+          console.error("Gemini API Error Response:", errorData);
+          throw new Error(`API Request Failed with status ${response.status}`);
+        }
         
         const data = await response.json();
         const textResp = data.candidates?.[0]?.content?.parts?.[0]?.text;
         
         if (textResp) {
           try {
-            const parsed = JSON.parse(textResp);
+            // Aggressively strip markdown formatting just in case the model ignores the prompt
+            const cleanJson = textResp.replace(/```json\n?/gi, '').replace(/```\n?/g, '').trim();
+            const parsed = JSON.parse(cleanJson);
+            
             if (parsed.text && parsed.source) {
               newQuote = parsed;
+              console.log("✅ Gemini Live Generation Success:", newQuote);
               
               // Add to history to prevent future repetition (keep trailing 30)
               setQuoteHistory(prev => {
@@ -124,17 +132,20 @@ Output MUST be strictly valid JSON without markdown wrapping, using exactly thes
               });
             }
           } catch(e) {
-            console.error("Failed to parse Gemini JSON:", e);
+            console.error("❌ Failed to parse Gemini JSON:", e, "Raw Text:", textResp);
           }
+        } else {
+          console.warn("⚠️ Gemini returned an empty response.");
         }
       } catch (err) {
-        console.error("Gemini execution failed, reverting to cached protocols:", err);
+        console.error("🚨 Gemini execution failed, reverting to cached protocols:", err);
       }
       setIsFetching(false);
     }
     
     // Offline/Fallback constraint check
     if (!newQuote) {
+      console.log("⚠️ Using local fallback quotation pool.");
       const quotes = QUOTATIONS[level];
       let availableQuotes = quotes.filter(q => !quoteHistory.includes(q.text));
       
