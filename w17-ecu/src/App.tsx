@@ -176,10 +176,11 @@ function App() {
           </svg>
           <span>W17 // SILVER ARROW BRAIN</span>
 
-          {/* KIMI ANTONELLI #12 DRIVER BADGE */}
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-[#CCFF00]/40 bg-[#CCFF00]/10 text-[#CCFF00] font-mono text-[10px] tracking-wider ml-2 shadow-[0_0_12px_rgba(204,255,0,0.15)]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#CCFF00] animate-pulse" />
-            <span className="font-bold tracking-widest text-[#CCFF00]">ANT #12</span>
+          {/* KIMI ANTONELLI #12 AZZURRO & SILVER STAR DRIVER BADGE */}
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-[#3B82F6]/40 bg-[#0055A5]/20 text-[#60A5FA] font-mono text-[10px] tracking-wider ml-2 shadow-[0_0_12px_rgba(59,130,246,0.2)]">
+            <Star className="w-2.5 h-2.5 text-[#93C5FD] fill-[#93C5FD]/60 animate-pulse" />
+            <span className="font-bold tracking-widest text-[#93C5FD]">ANT #12</span>
+            <span className="text-[8px] opacity-75 font-semibold text-[#60A5FA]">AKA</span>
             {/* Italian Flag Micro Accent */}
             <div className="flex h-2.5 w-2 rounded-[1px] overflow-hidden ml-0.5 opacity-90 border border-white/20">
               <div className="w-1/3 bg-[#009246]" />
@@ -396,28 +397,33 @@ function App() {
           </div>
 
           {/* KIMI ANTONELLI #12 HELMET & TELEMETRY MODULE */}
-          <div className="mt-3 border border-[#CCFF00]/30 bg-[#CCFF00]/5 p-2 rounded-sm relative overflow-hidden group/kimi">
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-1.5 text-[10px] font-mono tracking-widest text-[#CCFF00] font-bold">
-                <span className="px-1 py-0.5 bg-[#CCFF00] text-[#111] font-extrabold text-[9px] rounded-xs tracking-wider">ANT</span>
+          <div className="mt-3 border border-[#3B82F6]/30 bg-[#0055A5]/10 p-2.5 rounded-sm relative overflow-hidden group/kimi">
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center gap-1.5 text-[10px] font-mono tracking-widest text-[#93C5FD] font-bold">
+                <span className="px-1.5 py-0.5 bg-[#0055A5] text-[#E6E6E6] font-extrabold text-[9px] rounded-xs tracking-wider border border-[#3B82F6]/40">ANT</span>
                 <span>CAR #12 // K. ANTONELLI</span>
               </div>
-              <div className="flex h-2 w-3 rounded-[1px] overflow-hidden opacity-90 border border-white/20">
-                <div className="w-1/3 bg-[#009246]" />
-                <div className="w-1/3 bg-[#FFFFFF]" />
-                <div className="w-1/3 bg-[#CE2B37]" />
+              <div className="flex items-center gap-1">
+                <Star className="w-2.5 h-2.5 text-[#93C5FD] fill-[#93C5FD]/60" />
+                <div className="flex h-2 w-3 rounded-[1px] overflow-hidden opacity-90 border border-white/20">
+                  <div className="w-1/3 bg-[#009246]" />
+                  <div className="w-1/3 bg-[#FFFFFF]" />
+                  <div className="w-1/3 bg-[#CE2B37]" />
+                </div>
               </div>
             </div>
             <div className="flex items-center justify-between text-[9px] font-mono text-[#888]">
               <span>HELMET LIVERY</span>
-              <span className="text-[#CCFF00] font-semibold tracking-wider">FLUO YELLOW / CARBON</span>
+              <span className="text-[#60A5FA] font-semibold tracking-wider flex items-center gap-1">
+                AZZURRO BLUE / SILVER STARS
+              </span>
             </div>
           </div>
 
           {/* Chassis Decal Watermarks */}
           <div className="mt-3 flex flex-col gap-1">
             <span className="decal-watermark">CHASSIS: W17</span>
-            <span className="decal-watermark text-[#CCFF00]/40">DRIVER: ANT #12 (K. ANTONELLI)</span>
+            <span className="decal-watermark text-[#60A5FA]/40">DRIVER: ANT #12 (K. ANTONELLI / AKA)</span>
             <span className="decal-watermark">PU: M15 E PERFORMANCE</span>
             <span className="decal-watermark">AERO CONFIG: HIGH DOWNFORCE</span>
           </div>
