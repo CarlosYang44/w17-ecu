@@ -9,20 +9,39 @@ export interface ConferenceEvent {
   url: string;
 }
 
-const CONFERENCES: ConferenceEvent[] = ([
-  { id: '1', name: 'ICLR 2025', date: '2024-10-01', eventType: 'Paper Deadline', status: 'past', url: 'https://iclr.cc/' },
-  { id: '2', name: 'ICLR 2025', date: '2025-01-22', eventType: 'Notifications', status: 'past', url: 'https://iclr.cc/' },
-  { id: '3', name: 'CVPR 2025', date: '2024-11-14', eventType: 'Paper Deadline', status: 'past', url: 'https://cvpr.thecvf.com/' },
-  { id: '4', name: 'CVPR 2025', date: '2025-02-27', eventType: 'Notifications', status: 'past', url: 'https://cvpr.thecvf.com/' },
-  { id: '5', name: 'ICML 2025', date: '2025-01-30', eventType: 'Paper Deadline', status: 'past', url: 'https://icml.cc/' },
-  { id: '6', name: 'ICML 2025', date: '2025-05-02', eventType: 'Notifications', status: 'upcoming', url: 'https://icml.cc/' },
-  { id: '7', name: 'ACL 2025', date: '2025-02-15', eventType: 'Paper Deadline', status: 'past', url: 'https://2025.aclweb.org/' },
-  { id: '8', name: 'ACL 2025', date: '2025-05-15', eventType: 'Notifications', status: 'upcoming', url: 'https://2025.aclweb.org/' },
-  { id: '9', name: 'NeurIPS 2025', date: '2025-05-22', eventType: 'Paper Deadline', status: 'urgent', url: 'https://nips.cc/' },
-  { id: '10', name: 'NeurIPS 2025', date: '2025-09-25', eventType: 'Notifications', status: 'upcoming', url: 'https://nips.cc/' },
-  { id: '11', name: 'ECCV 2026', date: '2026-03-05', eventType: 'Paper Deadline', status: 'past', url: 'https://eccv.ecva.net/' },
-  { id: '12', name: 'ECCV 2026', date: '2026-07-01', eventType: 'Notifications', status: 'upcoming', url: 'https://eccv.ecva.net/' },
-] as ConferenceEvent[]).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+const RAW_CONFERENCES = [
+  { id: '1', name: 'EMNLP 2026', date: '2026-05-25', eventType: 'Paper Deadline', url: 'https://2026.emnlp.org/' },
+  { id: '2', name: 'EMNLP 2026', date: '2026-08-20', eventType: 'Notifications', url: 'https://2026.emnlp.org/' },
+  { id: '3', name: 'NeurIPS 2026', date: '2026-05-06', eventType: 'Paper Deadline', url: 'https://neurips.cc/' },
+  { id: '4', name: 'NeurIPS 2026', date: '2026-09-24', eventType: 'Notifications', url: 'https://neurips.cc/' },
+  { id: '5', name: 'AAAI 2027', date: '2026-07-28', eventType: 'Paper Deadline', url: 'https://aaai.org/' },
+  { id: '6', name: 'AAAI 2027', date: '2026-11-30', eventType: 'Notifications', url: 'https://aaai.org/' },
+  { id: '7', name: 'ICLR 2027', date: '2026-09-25', eventType: 'Paper Deadline', url: 'https://iclr.cc/' },
+  { id: '8', name: 'ICLR 2027', date: '2026-12-16', eventType: 'Notifications', url: 'https://iclr.cc/' },
+  { id: '9', name: 'CVPR 2027', date: '2026-11-13', eventType: 'Paper Deadline', url: 'https://cvpr.thecvf.com/' },
+  { id: '10', name: 'CVPR 2027', date: '2027-02-24', eventType: 'Notifications', url: 'https://cvpr.thecvf.com/' },
+  { id: '11', name: 'ACL 2027', date: '2027-01-01', eventType: 'Paper Deadline', url: 'https://2027.aclweb.org/' },
+  { id: '12', name: 'ACL 2027', date: '2027-05-15', eventType: 'Notifications', url: 'https://2027.aclweb.org/' },
+  { id: '13', name: 'ICML 2027', date: '2027-01-22', eventType: 'Paper Deadline', url: 'https://icml.cc/' },
+  { id: '14', name: 'ICML 2027', date: '2027-05-02', eventType: 'Notifications', url: 'https://icml.cc/' },
+];
+
+const getStatus = (dateStr: string): 'past' | 'upcoming' | 'urgent' => {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const target = new Date(dateStr);
+  target.setHours(0, 0, 0, 0);
+  
+  const diffDays = Math.ceil((target.getTime() - now.getTime()) / (1000 * 3600 * 24));
+  
+  if (diffDays < 0) return 'past';
+  if (diffDays <= 45) return 'urgent';
+  return 'upcoming';
+};
+
+export const CONFERENCES: ConferenceEvent[] = RAW_CONFERENCES
+  .map(c => ({ ...c, status: getStatus(c.date) } as ConferenceEvent))
+  .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
 export function ConferenceTimeline() {
   return (
