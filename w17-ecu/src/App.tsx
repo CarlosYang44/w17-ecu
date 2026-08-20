@@ -175,6 +175,18 @@ function App() {
             <path d="M5 80 L50 50 L95 80" fill="none" stroke="#00A19B" strokeWidth="2" />
           </svg>
           <span>W17 // SILVER ARROW BRAIN</span>
+
+          {/* KIMI ANTONELLI #12 DRIVER BADGE */}
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-[#CCFF00]/40 bg-[#CCFF00]/10 text-[#CCFF00] font-mono text-[10px] tracking-wider ml-2 shadow-[0_0_12px_rgba(204,255,0,0.15)]">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#CCFF00] animate-pulse" />
+            <span className="font-bold tracking-widest text-[#CCFF00]">ANT #12</span>
+            {/* Italian Flag Micro Accent */}
+            <div className="flex h-2.5 w-2 rounded-[1px] overflow-hidden ml-0.5 opacity-90 border border-white/20">
+              <div className="w-1/3 bg-[#009246]" />
+              <div className="w-1/3 bg-[#FFFFFF]" />
+              <div className="w-1/3 bg-[#CE2B37]" />
+            </div>
+          </div>
         </div>
 
         {/* F1 Shift Light LED Array */}
@@ -383,9 +395,29 @@ function App() {
             )}
           </div>
 
+          {/* KIMI ANTONELLI #12 HELMET & TELEMETRY MODULE */}
+          <div className="mt-3 border border-[#CCFF00]/30 bg-[#CCFF00]/5 p-2 rounded-sm relative overflow-hidden group/kimi">
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-1.5 text-[10px] font-mono tracking-widest text-[#CCFF00] font-bold">
+                <span className="px-1 py-0.5 bg-[#CCFF00] text-[#111] font-extrabold text-[9px] rounded-xs tracking-wider">ANT</span>
+                <span>CAR #12 // K. ANTONELLI</span>
+              </div>
+              <div className="flex h-2 w-3 rounded-[1px] overflow-hidden opacity-90 border border-white/20">
+                <div className="w-1/3 bg-[#009246]" />
+                <div className="w-1/3 bg-[#FFFFFF]" />
+                <div className="w-1/3 bg-[#CE2B37]" />
+              </div>
+            </div>
+            <div className="flex items-center justify-between text-[9px] font-mono text-[#888]">
+              <span>HELMET LIVERY</span>
+              <span className="text-[#CCFF00] font-semibold tracking-wider">FLUO YELLOW / CARBON</span>
+            </div>
+          </div>
+
           {/* Chassis Decal Watermarks */}
-          <div className="mt-4 flex flex-col gap-1">
+          <div className="mt-3 flex flex-col gap-1">
             <span className="decal-watermark">CHASSIS: W17</span>
+            <span className="decal-watermark text-[#CCFF00]/40">DRIVER: ANT #12 (K. ANTONELLI)</span>
             <span className="decal-watermark">PU: M15 E PERFORMANCE</span>
             <span className="decal-watermark">AERO CONFIG: HIGH DOWNFORCE</span>
           </div>
